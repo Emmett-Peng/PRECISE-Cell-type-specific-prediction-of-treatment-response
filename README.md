@@ -44,6 +44,5 @@ Code was developed and run in:
 
 ## Acknowledgements
 Thank you to Dr. Pingzhao Hu for his guidance and support throughout this project. 
-Special thanks to Emmett Peng for his Mixedbread contributions.
 
 
