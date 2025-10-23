@@ -17,7 +17,7 @@ Contains all scripts used to generate embeddings
 ### `downstream analysis/`  
 Contains all scripts used to perform clustering, identify markers, and annotate cell types. 
 
-- **`raw_data_analysis`** – Using raw data ([Bassez et al. data](https://lambrechtslab.sites.vib.be/en/single-cell))
+- **`raw_data_analysis.R`** – Using raw data ([Bassez et al. data](https://lambrechtslab.sites.vib.be/en/single-cell))
 - **`individual_embedding_analysis.R`** – Using scGPT or Mixedbread embeddings
 - **`scMIXE_analysis.R`** – Using scMIXE (concatenated) embeddings
 
