@@ -6,6 +6,7 @@ library(SummarizedExperiment)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
+library(enrichR)
 
 
 ## ---- Load and Preprocess Gene and Barcode Files ----
@@ -107,6 +108,17 @@ cluster_annotations <- data.frame(
 write.csv(cluster_annotations, "07-29-12PC-14clusters_pred_celltypes.csv", row.names = FALSE)
 
 
+## ---- Attach Cell Type Annotations ----
+markers <- read.csv("07-29-12PC-30000_14clusters_markers.csv")
+predicted <- read.csv("07-29-12PC-14clusters_pred_celltypes.csv")
+
+markers_with_celltypes <- markers %>%
+  left_join(predicted %>% select(cluster, predicted_cell_type), by = "cluster")
+head(markers_with_celltypes)
+
+write.csv(markers_with_celltypes, "07-29-12PC-14clusters_markers_with_celltypes.csv", row.names = FALSE)
+
+
 ## ---- Map Predicted Cell Types to Seurat Object ----
 predicted <- read.csv("07-29-12PC-14clusters_pred_celltypes.csv")
 predicted$cluster <- as.character(predicted$cluster)
@@ -174,35 +186,74 @@ DimPlot(
   )
 
 
-## ---- Merge Marker Genes with Predicted Cell Types ----
-all_markers$cluster <- as.character(all_markers$cluster)
-predicted$cluster <- as.character(predicted$cluster)
-markers_with_celltypes <- left_join(all_markers, predicted, by = "cluster")
-write.csv(markers_with_celltypes, "07-29-12PC-14clusters_markers_with_celltypes.csv", row.names = FALSE)
+## ---- Filter Genes ----
+markers <- read.csv("07-29-12PC-14clusters_markers_with_celltypes.csv")
 
-
-## ---- Filter and Rank Marker Genes ----
-markers_cta <- read.csv("07-29-12PC-14clusters_markers_with_celltypes.csv")
-
-# Filter marker genes based on log2FC, adjusted p-value, and expression threshold
-filtered_markers <- markers_cta %>%
+filtered_markers <- markers %>%
   filter(avg_log2FC > 1, p_val_adj < 0.05, pct.1 >= 0.25)
 
-# Identify cell types with no genes passing the filter
-missing_cell_types <- setdiff(
-  unique(markers_cta$predicted_cell_type),
-  unique(filtered_markers$predicted_cell_type)
-)
+# Count how many genes pass per cell type
+pass_counts <- filtered_markers %>%
+  count(predicted_cell_type, name = "pass_n")
 
-# Select top 100 genes for each missing cell type based on ranking criteria
-top_genes <- markers_cta %>%
-  filter(predicted_cell_type %in% missing_cell_types) %>%
+# Include cell types with 0 passing genes
+all_cell_types <- markers %>%
+  distinct(predicted_cell_type)
+
+pass_counts_full <- all_cell_types %>%
+  left_join(pass_counts, by = "predicted_cell_type") %>%
+  mutate(pass_n = ifelse(is.na(pass_n), 0L, pass_n))
+
+# Separate low and high passing cell types
+low_cts  <- pass_counts_full %>%
+  filter(pass_n < 10) %>%
+  pull(predicted_cell_type)
+
+high_cts <- pass_counts_full %>%
+  filter(pass_n >= 10) %>%
+  pull(predicted_cell_type)
+
+# Take top 100 genes ranked by p_val_adj, avg_log2FC, and pct.1
+top100_low <- markers %>%
+  filter(predicted_cell_type %in% low_cts) %>%
   arrange(predicted_cell_type, p_val_adj, desc(avg_log2FC), desc(pct.1)) %>%
   group_by(predicted_cell_type) %>%
   slice_head(n = 100) %>%
   ungroup()
 
-# Combine filtered and top-ranked genes
-final_markers <- bind_rows(filtered_markers, top_genes) %>%
-  select(-X)
+filtered_high <- filtered_markers %>%
+  filter(predicted_cell_type %in% high_cts)
+
+final_markers <- bind_rows(filtered_high, top100_low) %>%
+  select(-any_of(c("X", "cluster_size")))
+
+summary_tbl <- final_markers %>%
+  count(predicted_cell_type, name = "n_genes")
+print(summary_tbl)
+
+
 write.csv(final_markers, "bassez_raw_07-29-12PC-14clusters_markers_with_CTA_filtered_ranked.csv", row.names = FALSE)
+
+
+## ---- Gene Set Enrichment Analysis ----
+df <- read.csv("bassez_raw_07-29-12PC-14clusters_markers_with_CTA_filtered_100.csv")
+
+# Extract gene list for T Cells 
+Tcell_genes <- df %>%
+  filter(predicted_cell_type == "T_cells") %>%
+  pull(gene) %>%
+  unique() %>%
+  na.omit()
+
+# Select enrichment database 
+dbs <- c("GO_Biological_Process_2025")
+enrich_results <- enrichr(Tcell_genes, dbs)
+
+# Rank and select top GO terms 
+top_go <- enrich_results[["GO_Biological_Process_2025"]] %>%
+  arrange(desc(Combined.Score)) %>%
+  slice_head(n = 5) %>%
+  select(Term, Combined.Score, Adjusted.P.value, P.value, Overlap, Genes)
+print(top_go)
+
+write.csv(top_go, "raw_top5_GO_Tcells_CS.csv", row.names = FALSE)

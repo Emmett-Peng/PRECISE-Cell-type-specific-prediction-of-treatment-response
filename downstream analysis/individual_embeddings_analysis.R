@@ -8,6 +8,7 @@ library(celldex)
 library(SummarizedExperiment)
 library(tidyr)
 library(readr)
+library(enrichR)
 
 
 ## ---- Load and Filter Embeddings (Mixedbread) ----
@@ -26,9 +27,9 @@ embeddings <- embeddings[-removed_idx, ]
 barcodes <- read.table("barcodes.tsv", header = FALSE, sep = "\t", stringsAsFactors = FALSE)
 
 # Convert to matrix and align with barcodes
-embeddings_mat <- as.matrix(embeddings)
-rownames(embeddings_mat) <- barcodes$V1
-embeddings_sparse <- as(embeddings_mat, "dgCMatrix")
+embeddings_matrix <- as.matrix(embeddings)
+rownames(embeddings_matrix) <- barcodes$V1
+embeddings_sparse <- as(embeddings_matrix, "dgCMatrix")
 
 # Create Seurat object with embeddings as counts (transpose to match format)
 seurat_obj <- CreateSeuratObject(counts = t(embeddings_sparse), project = "BreastCancer", assay = "RNA")
@@ -49,7 +50,7 @@ for (res in resolutions) {
 }
 
 # Perform clustering at the optimal resolution
-seurat_obj <- FindClusters(seurat_obj, resolution = 0.230)
+seurat_obj <- FindClusters(seurat_obj, resolution = 0.035)
 
 
 ## ---- Run UMAP and Visualize Clusters----
@@ -140,6 +141,19 @@ predicted_summary <- predicted %>%
 print(predicted_summary)
 
 
+## ---- Attach Cell Type Annotations ----
+#markers <- read.csv("bassez_scgpt_06-27_9clusters_all_markers.csv")
+markers <- read.csv("bassez_mxbai_06-28_14clusters_all_markers.csv")
+#predicted <- read.csv("bassez+scgpt_06_27_9clusters_all_markers_pred_celltypes.csv")
+predicted <- read.csv("bassez_mxbai_06-28_14clusters_all_markers_pred_celltypes.csv")
+
+markers_with_celltypes <- markers %>%
+  left_join(predicted %>% select(cluster, predicted_cell_type), by = "cluster")
+head(markers_with_celltypes)
+
+#write.csv(markers_with_celltypes, "bassez_scgpt_06-27_9clusters_all_markers_with_celltypes.csv")
+write.csv(markers_with_celltypes, "bassez_mxbai_06-28_14clusters_all_markers_with_celltypes.csv")
+
 
 ## ---- Add Annotations and Visualize by Cell Type ----
 seurat_raw$predicted_cell_type <- predicted$predicted_cell_type[match(seurat_raw$seurat_clusters, predicted$cluster)]
@@ -193,3 +207,79 @@ DimPlot(
 
 ## ---- Cluster Frequency Table ----
 table(seurat_raw$predicted_cell_type, useNA = "ifany")
+
+
+## ---- Filter Genes ----
+#markers <- read.csv("bassez_scgpt_06-27_9clusters_all_markers_with_celltypes.csv")
+markers <- read.csv("bassez_mxbai_06-28_14clusters_all_markers_with_celltypes.csv")
+
+filtered_markers <- markers %>%
+  filter(avg_log2FC > 1, p_val_adj < 0.05, pct.1 >= 0.25)
+
+# Count how many genes pass per cell type
+pass_counts <- filtered_markers %>%
+  count(predicted_cell_type, name = "pass_n")
+
+# Include cell types with 0 passing genes
+all_cell_types <- markers %>%
+  distinct(predicted_cell_type)
+
+pass_counts_full <- all_cell_types %>%
+  left_join(pass_counts, by = "predicted_cell_type") %>%
+  mutate(pass_n = ifelse(is.na(pass_n), 0L, pass_n))
+
+# Separate low and high passing cell types
+low_cts  <- pass_counts_full %>%
+  filter(pass_n < 10) %>%
+  pull(predicted_cell_type)
+
+high_cts <- pass_counts_full %>%
+  filter(pass_n >= 10) %>%
+  pull(predicted_cell_type)
+
+#Take top 100 genes ranked by p_val_adj, avg_log2FC, and pct.1
+top100_low <- markers %>%
+  filter(predicted_cell_type %in% low_cts) %>%
+  arrange(predicted_cell_type, p_val_adj, desc(avg_log2FC), desc(pct.1)) %>%
+  group_by(predicted_cell_type) %>%
+  slice_head(n = 100) %>%
+  ungroup()
+
+filtered_high <- filtered_markers %>%
+  filter(predicted_cell_type %in% high_cts)
+
+final_markers <- bind_rows(filtered_high, top100_low) %>%
+  select(-any_of(c("X", "cluster_size")))
+
+summary_tbl <- final_markers %>%
+  count(predicted_cell_type, name = "n_genes")
+print(summary_tbl)
+
+#write.csv(final_markers, "bassez_scgpt_06-28_9clusters_all_markers_with_CTA_filtered_100", row.names = FALSE)
+write.csv(final_markers, "bassez_mxbai_06-28_14clusters_all_markers_with_CTA_filtered_100.csv", row.names = FALSE)
+
+
+## ---- Gene Set Enrichment Analysis ----
+#df <- read.csv("bassez_scgpt_06-27_9clusters_all_markers_with_CTA_filtered_100.csv")
+df <- read.csv("bassez_mxbai_06-28_14clusters_all_markers_with_CTA_filtered_100.csv")
+
+# Extract gene list for T Cells 
+Tcell_genes <- df %>%
+  filter(predicted_cell_type == "T_cells") %>%
+  pull(gene) %>%
+  unique() %>%
+  na.omit()
+
+# Select enrichment database 
+dbs <- c("GO_Biological_Process_2025")
+enrich_results <- enrichr(Tcell_genes, dbs)
+
+# Rank and select top GO terms 
+top_go <- enrich_results[["GO_Biological_Process_2025"]] %>%
+  arrange(desc(Combined.Score)) %>%
+  slice_head(n = 5) %>%
+  select(Term, Combined.Score, Adjusted.P.value, P.value, Overlap, Genes)
+print(top_go)
+
+#write.csv(top_go, "scgpt_top5_GO_Tcells_CS.csv", row.names = FALSE)
+write.csv(top_go, "mxbai_top5_GO_Tcells_CS.csv", row.names = FALSE)
