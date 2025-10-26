@@ -6,7 +6,7 @@ This repository contains all code, scripts, and results for the research project
 <p align="center">
   <img src="assets/overview.jpg" alt="PRECISE Pipeline" width="75%">
   <br>
-  <em>Figure 1. Overview of the PRECISE pipeline integrating single-cell RNA-seq with foundation model embeddings.</em>
+  <em>PRECISE framework for predicting treatment outcomes from single-cell data. **A** Single-cell embeddings are generated either directly from a foundation model (scGPT) or via LLM-derived embeddings (Mixedbread), which are concatenated to produce integrated representations (scMIXE). **B** Downstream single-cell analyses are performed to define cell populations and extract gene signatures, including clustering, cell type annotation, marker gene discovery, and enrichment analysis. **C** The PRECISE framework integrates the cell type-specific features into patient-level bulk data and applies supervised classification to predict treatment outcomes (responders vs. non-responders).</em>
 </p>
 
 ---
