@@ -36,7 +36,6 @@ Contains scripts for clustering, marker gene identification, and cell type annot
 
 ---
 
---- 
 
 ## Data Availability
 - [Bassez et al. data](https://lambrechtslab.sites.vib.be/en/single-cell)
