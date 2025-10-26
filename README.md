@@ -1,6 +1,11 @@
 This repository contains all code, scripts, and results for the research project titled **PRECISE: Cell-Type Inference from Single-Cell Embeddings Enhances Prediction of Breast Cancer Immunotherapy Response.**  
 
 ---
+## PRECISE: Prediction of REsponse using Cell-type Inference and Single-cell Embedding
+![Overview of the PRECISE pipeline](assets/overview.jpg)
+
+
+---
 
 ## Repository Structure
 
