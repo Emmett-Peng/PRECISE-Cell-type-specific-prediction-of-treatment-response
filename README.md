@@ -15,9 +15,10 @@ This repository contains all code, scripts, and results for the research project
   </em>
 </p>
 
+---
+## Abstract
 
-
-
+Breast cancer’s cellular diversity complicates biomarker discovery for immunotherapy response. Existing measures such as PD-L1 expression and interaction-based scores often fail to capture the complexity of the tumour microenvironment. We present PRECISE (Prediction of REsponse using Cell-type Inference and Single-cell Embedding), a framework that integrates embeddings from a single-cell foundation model (scGPT) and a language model (Mixedbread) into a combined representation (scMIXE) for cell type-specific prediction of anti-PD-1 treatment response. Using a unified pipeline of clustering, marker gene identification, and supervised classification, scMIXE improved clustering modularity, reduced singletons, and enhanced recovery of immune populations such as macrophages compared with baseline, scGPT, or Mixedbread alone. In both the Bassez discovery cohort and I-SPY2-990 validation dataset, macrophage-derived classifiers trained on scMIXE achieved the highest predictive accuracy (AUC ≈ 0.83), outperforming PD-L1 and clinical-only baselines. PRECISE demonstrates that integrating embeddings with cell type-specific modeling enhances biomarker interpretability and prediction performance in breast cancer immunotherapy.
 ---
 
 ## Repository Structure
