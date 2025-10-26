@@ -9,7 +9,7 @@ This repository contains all code, scripts, and results for the research project
 Contains scripts used to generate embeddings.
 
 - **`scgpt_embeddings.ipynb`** - Colab Python notebook used to generate scGPT embeddings and save them for downstream processing in R. Embedding concatenation of scGPT and Mixedbread to generate scMIXE was performed in this notebook.
-- **`mixedbread_embeddings.ipynb`** - 
+- **`mixedbread_embeddings.ipynb`** - R code was used to generate the gene name sequences for Mixedbread embedding. The Colab Python notebook generates Mixedbread embeddings for all single-cell samples.
 
 ---
 
