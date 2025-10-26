@@ -24,9 +24,7 @@ Contains scripts for clustering, marker gene identification, and cell type annot
 ---
 
 ### `treatment outcome prediction/`
-Contains scripts used to predict treatment response outcomes based on bulk gene expression and scMIXE-derived marker genes. 
-
-- 
+- Contains scripts used to predict treatment response outcomes based on bulk gene expression and scMIXE-derived marker genes. 
 
 
 
