@@ -36,6 +36,14 @@ Contains scripts for clustering, marker gene identification, and cell type annot
 
 ---
 
+--- 
+
+## Data Availability
+- [Bassez et al. data](https://lambrechtslab.sites.vib.be/en/single-cell)
+- [I-SPY2 data](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE194040)
+
+---
+
 ## Environment  
 Code was developed and run in:
 - R (version ≥ 4.2.0)
