@@ -2,8 +2,12 @@ This repository contains all code, scripts, and results for the research project
 
 ---
 ## PRECISE: Prediction of REsponse using Cell-type Inference and Single-cell Embedding
-![Overview of the PRECISE pipeline](assets/overview.jpg)
 
+<p align="center">
+  <img src="assets/overview.jpg" alt="PRECISE Pipeline" width="75%">
+  <br>
+  <em>Figure 1. Overview of the PRECISE pipeline integrating single-cell RNA-seq with foundation model embeddings.</em>
+</p>
 
 ---
 
